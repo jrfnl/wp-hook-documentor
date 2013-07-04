@@ -1,0 +1,22 @@
+#OS junk files
+[Tt]humbs.db
+*.DS_store
+
+#various file types
+___*
+*.log
+*.bak
+*.[Cc]ache
+*.cpr
+*.orig
+
+#PHPStorm dir
+.idea/
+
+#Subversion files
+.svn
+
+#backup dirs
+backup/
+backups/
+from others/

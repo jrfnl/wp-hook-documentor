@@ -1,2 +1,6 @@
-form {
+form#wphd-form {
+}
+
+form#wphd-form input[type="text"] {
+	width: 500px;
 }
