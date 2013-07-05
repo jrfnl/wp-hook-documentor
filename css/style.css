@@ -1,6 +1,26 @@
-form#wphd-form {
+#wpphd {
+	font-family: helvetica, verdana, sans-serif;
+	font-size: 14px;
+}
+form#wpphd-form {
+
 }
 
-form#wphd-form input[type="text"] {
+form#wpphd-form input[type="text"] {
 	width: 500px;
+}
+
+form#wpphd-form div {
+	clear: both;
+}
+
+form#wpphd-form .wpphd-column {
+	width: 30%;
+	padding: 5px 10px 10px 10px;
+	float: left;
+	clear: none;
+}
+
+form#wpphd-form .wpphd-column p {
+	height: 2.3em;
 }

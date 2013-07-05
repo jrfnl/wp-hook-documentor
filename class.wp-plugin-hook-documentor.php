@@ -49,9 +49,21 @@ if ( !class_exists( 'wp_plugin_hook_documentor' ) ) {
 
 
 		/**
-		 * @param	string	$source		path to the source directory to walk
+		 * @param	string	$source		path to the source directory to walk as received
 		 */
 		public $source;
+		
+		/**
+		 * @param	string	$source		path to the source directory to walk as received
+		 */
+//		public $source_rel = '../../debug-bar-constants/debug-bar-constants';
+		public $source_rel = '../../MimeTypes-Link-Icons';
+
+		
+		/**
+		 * @param	string	$source_walkable		path to the source directory to walk
+		 */
+		public $source_walkable;
 	
 		/**
 		 * @param
@@ -72,9 +84,9 @@ if ( !class_exists( 'wp_plugin_hook_documentor' ) ) {
 		 */
 		public $sort_options = array(
 			'name'				=>	'Hook name',
-			'file_line'			=>	'File and then line number',
-			'type_name'			=>	'Hook type and then hook name',
-			'type_file_line'	=>	'Hook type and then file name and line number',
+			'file_line'			=>	'File, then line number',
+			'type_name'			=>	'Hook type, then hook name',
+			'type_file_line'	=>	'Hook type, then file name and line number',
 		);
 
 		/**
@@ -88,9 +100,9 @@ if ( !class_exists( 'wp_plugin_hook_documentor' ) ) {
 		 * @param	array	$styles		available output styles
 		 */
 		public $styles = array(
+			   'text'	=>	'Text',
 			   'html'	=>	'XHTML',
 			   'xml'	=>	'XML1.0',
-			   'text'	=>	'Text',
 			   'php'	=>	'PHP',
 		);
 
@@ -110,7 +122,25 @@ if ( !class_exists( 'wp_plugin_hook_documentor' ) ) {
 			'view'		=>	'Show the result in the chosen style',
 			'file'		=>	'Present the result as a file',
 		);
-	
+		
+		
+		/**
+		 * @param	array	$extensions	Which file extensions to look for
+		 */
+		private $extensions = array( 'php' );
+		
+		/**
+		 * @param	array	$hook_names		Array of wordpress function names which call hooks and their type
+		 */
+		private $hook_names = array(
+			'apply_filters'				=>	'filter',
+			'apply_filters_ref_array'	=>	'filter',
+			'do_action'					=>	'action',
+			'do_action_ref_array'		=>	'action',
+		);
+		
+		private $token_type = 'T_STRING';
+
 	
 		/**
 		 * @param	string	$plugin_name	Store for the retrieved plugin name
@@ -125,14 +155,14 @@ if ( !class_exists( 'wp_plugin_hook_documentor' ) ) {
 		 *									'line'		=>	$line_number,
 		 *									'type'		=>	'action' / 'filter',
 		 *									'params'	=>	$hook_params,
+		 *									'signature'	=>	$signature,
 		 *									'docs'		=>	$documentation,
 		 *								)
 		 */
 		public $hooks = array();
 	
 	
-		function __construct( $source = '', /*$hierarchical = false,*/ $sort_by = 'name', $style = 'html', $format = 'return' ) {
-	//		include( 'include/class.directoryinfo/directoryinfo.inc.php' );
+		function __construct( $source = '', /*$hierarchical = false,*/ $sort_by = 'name', $style = 'html', $format = 'textarea' ) {
 
 			if( version_compare( PHP_VERSION, '5', '<' ) === true ) {
 				trigger_error( 'The WP plugin hook documentor requires PHP5+', E_USER_NOTICE );
@@ -140,7 +170,7 @@ if ( !class_exists( 'wp_plugin_hook_documentor' ) ) {
 			}
 
 			if( self::DEV === true ) {
-				include_once( 'jrfdebug.inc.php' );
+				include_once( 'include/jrfdebug.inc.php' );
 			}
 
 			$this->validate_params( $source, 'source' );
@@ -194,7 +224,7 @@ if ( !class_exists( 'wp_plugin_hook_documentor' ) ) {
 		
 		function get_output() {
 			
-			$this->hooks = $this->get_hooks();
+			$this->get_hooks();
 
 			if( is_array( $this->hooks ) && count( $this->hooks ) > 0 ) {
 
@@ -234,26 +264,74 @@ if ( !class_exists( 'wp_plugin_hook_documentor' ) ) {
 				return $this->hooks;
 			}
 			
-			return $this->walk_source();
-			
-
+			$this->walk_source();
 		}
 	
-		
+
 		function walk_source() {
+			include_once( 'include/class.directorywalker.php' );
 
+			$filelist = wpphd_directory_walker::get_file_list( $this->source, true, $this->extensions );
+			
+			pr_var( $filelist, 'retrieved file list', true );
+
+
+			require_once 'include/class.wp_plugin_tokenizer.php';
+
+  			$slash = ( strrchr( $this->source, DIRECTORY_SEPARATOR ) === DIRECTORY_SEPARATOR ? '' : DIRECTORY_SEPARATOR );
+  			
+  			$hooks = array();
+
+
+			foreach( $filelist as $filename ) {
+				$ts = new wpphd_wp_plugin_tokenizer( $this->source . $slash . $filename );
+				
+//				pr_var( $ts, 'PHP_Token_Stream class for: ' . $this->source . $slash . $filename, true );
+
+
+				$filtered = $ts->filter_on_value_and_type( array_keys( $this->hook_names ), $this->token_type );
+
+//				pr_var( $filtered, 'filtered list', true );
+
+
+				foreach( $filtered as $k => $token ) {
+					
+					$signature = $ts->get_signature( $token, $k );
+	  		 		$parsed_signature = $this->parse_hook_signature( $signature );
+
+	  		 		$hooks[$parsed_signature['hook_name']] = array(
+						'file'				=>	$filename,
+						'line'				=>	$token->getLine(),
+						'type'				=>	$this->hook_names[$token->__toString()],
+						'called_by'			=>	$token->__toString(),
+						'signature'			=>	$signature,
+						'params'			=>	$parsed_signature['params'],
+						'comment'			=>	$ts->get_nearest_comment( $token, $k ),
+						'parsed_comment'	=>	$ts->parse_nearest_comment( $token, $k ),
+//						'apidocblock'	=> $ts->get_nearest_comment( $token, $k, 'api' ),
+	  		 		);
+				}
+
+			}
+
+			$this->hooks = $hooks;
+			pr_var( $this->hooks, 'The hooks with gathered info', true );
 		}
 		
-
-		function tokens_to_array() {
-			
-			
-/*
-apply_filters(), apply_filters_ref_array(), do_action(), and do_action_ref_array()
-*/
-
-// Find plugin name as well
+		
+		function parse_hook_signature( $sig ) {
+			$hook_names = implode( '|', array_keys( $this->hook_names ) );
+			//apply_filters( 'mtli_filesize', '(' . $filesize . ')' )
+			$found = preg_match( '`^(?:' . $hook_names . ')\s*\(\s*([\'"])([\w-]+)\1\s*,(.+)\)$`', $sig, $matches );
+			if( $found > 0 ) {
+				$sig = array(
+					'hook_name'	=> 	$matches[2],
+					'params'	=>	explode( ',', $matches[3] ),
+				);
+			}
+			return $sig;
 		}
+
 	
 		
 		/**

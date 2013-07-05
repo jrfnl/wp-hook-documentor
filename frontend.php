@@ -25,7 +25,7 @@ include_once( 'include/jrfdebug.inc.php' );
 
 if ( !class_exists( 'wp_plugin_hook_documentor_frontend' ) ) {
 
-	include( 'include/class.wp-plugin-hook-documentor.php' );
+	include( 'class.wp-plugin-hook-documentor.php' );
 	
 	class wp_plugin_hook_documentor_frontend extends wp_plugin_hook_documentor {
 	
@@ -35,17 +35,19 @@ if ( !class_exists( 'wp_plugin_hook_documentor_frontend' ) ) {
 		
 		// @todo change this to the current directory
 		// Current default is just for testing purposes
-		public $default_source = 'I:\000_GitHub\debug-bar-constants\debug-bar-constants';
+//		public $default_source = 'I:\000_GitHub\debug-bar-constants\debug-bar-constants';
+		public $default_source = 'I:\000_GitHub\MimeTypes-Link-Icons';
+
 	
 		function __construct() {
 
 			if( isset( $_POST ) && ( is_array( $_POST ) && count( $_POST ) > 0 ) ) {
 if( self::DEV ) { pr_var( $_POST, '$_POST', true ); }
-				$source = ( isset( $_POST['wphd-source'] ) ? $_POST['wphd-source'] : null );
-//				$hierarchical = ( isset( $_POST['wphd-hierarchical'] ) && $_POST['wphd-hierarchical'] === '1' ? true : false );
-				$sort_by = ( isset( $_POST['wphd-sort-by'] ) ? $_POST['wphd-sort-by'] : null );
-				$style = ( isset( $_POST['wphd-style'] ) ? $_POST['wphd-style'] : null );
-				$format = ( isset( $_POST['wphd-format'] ) ? $_POST['wphd-format'] : null );
+				$source = ( isset( $_POST['wpphd-source'] ) ? $_POST['wpphd-source'] : null );
+//				$hierarchical = ( isset( $_POST['wpphd-hierarchical'] ) && $_POST['wpphd-hierarchical'] === '1' ? true : false );
+				$sort_by = ( isset( $_POST['wpphd-sort-by'] ) ? $_POST['wpphd-sort-by'] : null );
+				$style = ( isset( $_POST['wpphd-style'] ) ? $_POST['wpphd-style'] : null );
+				$format = ( isset( $_POST['wpphd-format'] ) ? $_POST['wpphd-format'] : null );
 				parent::__construct( $source, /*$hierarchical,*/ $sort_by, $style, $format );
 				$this->is_post = true;
 				unset( $source, /*$hierarchical,*/ $sort_by, $style, $format );
@@ -89,7 +91,7 @@ if( self::DEV ) { pr_var( $_POST, '$_POST', true ); }
 	<title></title>
 	<link rel="stylesheet" href="css/style.css" />
 </head>
-<body>
+<body id="wpphd">
 ';
 		}
 
@@ -105,62 +107,66 @@ if( self::DEV ) { pr_var( $_POST, '$_POST', true ); }
 	
 		function show_form() {
 			$html = '
-	<form method="post" id="wphd-form" enctype="multipart/form-data" accept-charset="utf-8">
+	<form method="post" id="wpphd-form" enctype="multipart/form-data" accept-charset="utf-8">
+		<fieldset>
 		<div>
-			<label for="wphd-source">Please provide the source location:
-				<input id="wphd-source" name="wphd-source" type="text" value="' . ( $this->source !== '' ? $this->source : $this->default_source ) . '" />
+			<label for="wpphd-source">Please provide the source location:
+				<input id="wpphd-source" name="wpphd-source" type="text" value="' . ( $this->source !== '' ? $this->source : $this->default_source ) . '" />
 			</label>
 		</div>
 		' .
 
 /*		<div>
-			<label for="wphd-hierarchical"> Hierarchical ?
-				<input id="wphd-hierarchical" name="wphd-hierarchical" type="checkbox" value="1" ' . ( true === $this->hierarchical ? 'checked="checked"' : '' ) . ' />
+			<label for="wpphd-hierarchical"> Hierarchical ?
+				<input id="wpphd-hierarchical" name="wpphd-hierarchical" type="checkbox" value="1" ' . ( true === $this->hierarchical ? 'checked="checked"' : '' ) . ' />
 			</label>
 		</div>
 */
 
-  		'<div>
+  		'<div class="wpphd-column">
 			<p>How would you like the hooks to be sorted ?</p>';
 
 		foreach( $this->sort_options as $key => $sort_by ) {
 			$html .= '
-			<label for="wphd-sort-by-' . $key . '">
-				<input id="wphd-sort-by-' . $key . '" name="wphd-sort-by" type="radio" value="' . $key . '" ' . ( $key === $this->sort_by ? 'checked="checked"' : '' ) . '" />
+			<label for="wpphd-sort-by-' . $key . '">
+				<input id="wpphd-sort-by-' . $key . '" name="wpphd-sort-by" type="radio" value="' . $key . '" ' . ( $key === $this->sort_by ? 'checked="checked"' : '' ) . '" />
 				' . $sort_by . '
-			</label>';
+			</label><br />';
 		}
 
 		$html .= '
 		</div>
 
-  		<div>
+  		<div class="wpphd-column">
 			<p>In which style would you like to receive the output ?</p>';
 
 		foreach( $this->styles as $key => $style ) {
 			$html .= '
-			<label for="wphd-style-' . $key . '">
-				<input id="wphd-style-' . $key . '" name="wphd-style" type="radio" value="' . $key . '" ' . ( $key === $this->style ? 'checked="checked"' : '' ) . '" />
+			<label for="wpphd-style-' . $key . '">
+				<input id="wpphd-style-' . $key . '" name="wpphd-style" type="radio" value="' . $key . '" ' . ( $key === $this->style ? 'checked="checked"' : '' ) . '" />
 				' . $style . '
-			</label>';
+			</label><br />';
 		}
 
 		$html .= '
 		</div>
 
-		<div>
+		<div class="wpphd-column">
 			<p>In which format would you like to received the output ?</p>';
 		foreach( $this->formats as $key => $format ) {
 			$html .= '
-			<label for="wphd-format-' . $key . '">
-				<input id="wphd-format-' . $key . '" name="wphd-format" type="radio" value="' . $key . '" ' . ( $key === $this->format ? 'checked="checked"' : '' ) . '" />
+			<label for="wpphd-format-' . $key . '">
+				<input id="wpphd-format-' . $key . '" name="wpphd-format" type="radio" value="' . $key . '" ' . ( $key === $this->format ? 'checked="checked"' : '' ) . '" />
 				' . $format . '
-			</label>';
+			</label><br />';
 		}
 
 		$html .= '
 		</div>
-		<input type="submit" name="wphd-submit" id="wphd-submit" value="Submit" />
+		<div class="wpphd-row">
+			 <input type="submit" id="wpphd-submit" value="Submit" />
+		</div>
+		</fieldset>
 
 	</form>
 			';
@@ -183,6 +189,7 @@ if( self::DEV ) { pr_var( $_POST, '$_POST', true ); }
 			return '';
 			
 			// Pull the readme file in ?
+			// Pull in one-page documentation created by phpDocumentor ?
 			
 			// Online (static) use
 			
