@@ -12,10 +12,17 @@
  *
  * @version	1.0
  * @since	2013-07-05 // Last changed: by Juliette Reinders Folmer
- * @copyright	Advies en zo, Meedenken en -doen ©2013
+ * @copyright	Advies en zo, Meedenken en -doen ï¿½2013
  * @license http://www.opensource.org/licenses/lgpl-license.php GNU Lesser General Public License
  *
  */
+ 
+/**
+ * @todo Work out nearest comment code for docblock above function definition
+ * @todo Add method to retrieve plugin name from file
+ *
+ */
+
 
 if ( !class_exists( 'wpphd_wp_plugin_tokenizer' ) ) {
 	
@@ -39,6 +46,31 @@ if ( !class_exists( 'wpphd_wp_plugin_tokenizer' ) ) {
 	    public function __construct( $sourceCode ) {
 			parent::__construct( $sourceCode );
 	    }
+	    
+
+	    public function get_plugin_name( $name = null ) {
+
+			foreach( $this as $k => $token ) {
+
+				// Only look at the very start of the file, break out as soon as code is encountered
+				if( ( ! $token instanceof PHP_Token_OPEN_TAG &&
+					! $token instanceof PHP_Token_WHITESPACE ) &&
+					( ! $token instanceof PHP_TOKEN_DOC_COMMENT &&
+					! $token instanceof PHP_TOKEN_COMMENT ) ) {
+					break;
+				}
+
+				// We have a comment - check to see if we can parse the plugin name based on the WP readme standard
+				if( $token instanceof PHP_Token_DOC_COMMENT ||
+					$token instanceof PHP_Token_COMMENT ) {
+					if( preg_match( '`[\s\*]+Plugin Name: ([^\n\r]+)[\n\r]`', $token->__toString(), $matches ) ) {
+						$name = $matches[1];
+						break;
+					}
+				}
+			}
+			return $name;
+		}
 		
 		
 		public function filter_on_value_and_type( $value, $type ) {
@@ -273,10 +305,9 @@ if ( !class_exists( 'wpphd_wp_plugin_tokenizer' ) ) {
 					$found = preg_match( '`((?:\|?(?:string|integer|int|boolean|bool|float|double|object|mixed|array|resource|void|null|callback|false|true|self))+)(?:\s+(\$[\w]+))?(\s+[^$]*)?$`', $string, $match );
 		
 					if( $found > 0 ) {
-						$return = array();
-						$return['type'] = $match[1];
-						if( isset( $match[2] ) ) { $return['var_name'] = $match[2]; }
-						if( isset( $match[3] ) ) { $return['comment'] = $match[3]; }
+						$return = array( 'type' => $match[1] );
+						if( isset( $match[2] ) && $match[2] !== '' ) { $return['var_name'] = $match[2]; }
+						if( isset( $match[3] ) && $match[3] !== '' ) { $return['comment'] = trim( $match[3] ); }
 //						return $return;
 					}
 					break;
@@ -370,6 +401,76 @@ if ( !class_exists( 'wpphd_wp_plugin_tokenizer' ) ) {
 			return $return;
 		}
 
+
+
+//			$this->print_to_table_helper( 0, 100 );
+		function print_to_table_helper( $start_position, $end_position ) {
+
+			$start = $start_position;
+			$end = $end_position;
+			$reverse = false;
+
+			if( $end_position < $start_position ) {
+				$reverse = true;
+				$start = $end_position;
+				$end = $start_position;
+			}
+			
+			print '<table>
+		<tr>
+			<th width="40">Key</th>
+			<th width="40">Line</th>
+			<th width="140">Type</th>
+			<th>Content</th>
+		</tr>';
+
+			$rows = array();
+			if( $this->offsetExists( $start ) ) {
+
+				$this->seek( $start );
+
+				while( $this->key() < $end && $this->offsetExists( $this->key() )) {
+//                for( $i = $start; $i < $end; $i++ ) {
+
+					$rows[] = '
+			<tr>
+				<td>' . $this->key() . '</td>
+				<td>' . $this->current()->getLine() . '</td>
+				<td>' . get_class( $this->current() ) . '</td>
+				<td>' . $this->current()->__toString() . '</td>
+			</tr>';
+
+/*
+				<td>' . $this->tokens[$i]->key() . '</td>
+				<td>' . $this->getLine() . '</td>
+				<td>' . get_class( $token ) . '</td>
+				<td>' . $this->__toString() . '</td>
+
+ */
+					if( $this->key() > $end ) {
+						break;
+					}
+					$this->next();
+				}
+				if( $reverse === true ) {
+					$rows = array_reverse( $rows );
+				}
+				array_walk( $rows, array('self','print_it') );
+
+			}
+			else {
+				print '<tr><td colspan="4">No tokens found between the given positions.</td></tr>';
+			}
+			
+			print '</table>';
+
+		}
+
+
+        static function print_it( $value, $key ) {
+            print $value;
+            return;
+        }
 
 
 	} /* End of class */
