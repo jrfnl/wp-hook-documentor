@@ -180,10 +180,9 @@ if( self::DEV ) { pr_var( $_POST, '$_POST', true ); }
 
 
 		function show_hooks() {
-			$this->get_output();
-			return '';
+			return $this->display_output();
 		}
-		
+
 
 		function show_documentation() {
 			return '';

@@ -13,7 +13,7 @@
  *
  * @version	0.2
  * @since	2013-07-03 // Last changed: by Juliette Reinders Folmer
- * @copyright	Advies en zo, Meedenken en -doen ©2013
+ * @copyright	Advies en zo, Meedenken en -doen ï¿½2013
  * @license http://www.opensource.org/licenses/lgpl-license.php GNU Lesser General Public License
  * @license	http://opensource.org/licenses/academic Academic Free License Version 1.2
  * @example	example/example.php
@@ -222,33 +222,17 @@ if ( !class_exists( 'wp_plugin_hook_documentor' ) ) {
 
 		
 		
-		function get_output() {
+		function display_output() {
 			
 			$this->get_hooks();
 
 			if( is_array( $this->hooks ) && count( $this->hooks ) > 0 ) {
 
 				$this->sort_hooks();
+				
+				$output = $this->generate_output();
 
-                $output = null;
-	
-				switch( $this->style ) {
-					case 'html':
-						$output = $this->generate_html_output(); // html string
-						break;
-	
-					case 'xml':
-						$output = $this->generate_xml_output(); // simpleXML xml object
-						break;
-	
-					case 'text':
-						$output = $this->generate_text_output(); // text string
-						break;
-	
-					case 'php':
-						$output = $this->generate_php_output(); // php array
-						break;
-				}
+
                 return $this->format_output( $output );
 			}
             else {
@@ -263,17 +247,12 @@ if ( !class_exists( 'wp_plugin_hook_documentor' ) ) {
 			if( isset( $this->hooks ) && ( is_array( $this->hooks ) && count( $this->hooks ) > 0 ) ) {
 				return $this->hooks;
 			}
-			
-			$this->walk_source();
-		}
-	
 
-		function walk_source() {
 			include_once( 'include/class.directorywalker.php' );
 
 			$filelist = wpphd_directory_walker::get_file_list( $this->source, true, $this->extensions );
-			
-			pr_var( $filelist, 'retrieved file list', true );
+
+//			pr_var( $filelist, 'retrieved file list', true );
 
 
 			require_once 'include/class.wp_plugin_tokenizer.php';
@@ -285,6 +264,8 @@ if ( !class_exists( 'wp_plugin_hook_documentor' ) ) {
 
 			foreach( $filelist as $filename ) {
 				$ts = new wpphd_wp_plugin_tokenizer( $this->source . $slash . $filename );
+				
+				$this->plugin_name = $ts->get_plugin_name( $this->plugin_name );
 				
 //				pr_var( $ts, 'PHP_Token_Stream class for: ' . $this->source . $slash . $filename, true );
 
@@ -315,7 +296,7 @@ if ( !class_exists( 'wp_plugin_hook_documentor' ) ) {
 			}
 
 			$this->hooks = $hooks;
-			pr_var( $this->hooks, 'The hooks with gathered info', true );
+pr_var( $this->hooks, 'The hooks with gathered info', true );
 		}
 		
 		
@@ -328,6 +309,7 @@ if ( !class_exists( 'wp_plugin_hook_documentor' ) ) {
 					'hook_name'	=> 	$matches[2],
 					'params'	=>	explode( ',', $matches[3] ),
 				);
+				$sig['params'] = array_map( 'trim', $sig['params'] );
 			}
 			return $sig;
 		}
@@ -430,6 +412,33 @@ if ( !class_exists( 'wp_plugin_hook_documentor' ) ) {
 
 
 
+
+
+		function generate_output() {
+
+			$output = null;
+
+			switch( $this->style ) {
+				case 'html':
+					$output = $this->generate_html_output(); // html string
+					break;
+
+				case 'xml':
+					$output = $this->generate_xml_output(); // simpleXML xml object
+					break;
+
+				case 'text':
+					$output = $this->generate_text_output(); // text string
+					break;
+
+				case 'php':
+					$output = $this->generate_php_output(); // php array
+					break;
+			}
+			return $output;
+		}
+
+
 		/**
 		 *
 		 *
@@ -441,22 +450,106 @@ if ( !class_exists( 'wp_plugin_hook_documentor' ) ) {
 		 * @return string
 		 */
 		function generate_text_output() {
-			$len = ( function_exists( 'mb_strlen' ) ? mb_strlen( $this->plugin_name, 'UTF-8' ) : strlen( $this->plugin_name ) );
-			$string = $this->plugin_name . "\r\n" . str_repeat( '=', $len ) . "\r\n\r\n";
+			$string = 'Actions and Filters for Plugin: ' . $this->plugin_name . "\r\n" . str_repeat( '=', 80 ) . "\r\n\r\n";
 
 			foreach( $this->hooks as $key => $hook ) {
 				$string .= 'Hook: ' . "\t\t\t\t" . $key . "\n\r" .
 					'File Name: ' . "\t\t\t" . $hook['file'] . "\n\r" .
 					'Line Number: ' . "\t\t\t" . $hook['line'] . "\n\r" .
 					'Hook Type: ' . "\t\t\t" . $hook['type'] . "\n\r" .
-					'Parameters: ' . "\t\t\t" . $hook['params'] . "\n\r" .
-					'Available documentation: ' . "\t" . ( isset( $hook['docs'] ) ? $hook['docs'] : 'None available' ) . "\n\r\n\r";
+					'Called by: ' . "\t\t\t" . $hook['called_by'] . "\n\r" .
+					'Signature: ' . "\t\t\t" . $hook['signature'] . "\n\r" .
+					str_pad ( 'Parameters:', 80, "-", STR_PAD_RIGHT ) . "\n\r";
+
+				if( is_array( $hook['params'] ) && count( $hook['params'] ) > 0 ) {
+					foreach( $hook['params'] as $param ) {
+						$string .= $param . "\n\r";
+					}
+					unset( $param );
+				}
+				else {
+					$string .= 'None' . "\n\r";
+				}
+
+				$string .= str_pad ( 'Available documentation:', 80, "-", STR_PAD_RIGHT ) . "\n\r";
+				if( is_array( $hook['parsed_comment'] ) && count( $hook['parsed_comment'] )> 0 ) {
+					foreach( $hook['parsed_comment'] as $tag => $comments_array ) {
+
+						foreach( $comments_array as $key => $item ) {
+							// Set the tag column
+							if( $key === 0 ) {
+//								$string .= str_pad( $tag . ' :', 20 );
+								$col1 = str_pad( $tag . ' :', 18 );
+							}
+							else {
+//								$string .= $prefix = str_repeat( ' ', 20 );
+								$col1 = str_repeat( ' ', 18 );
+                            }
+                            
+                            // Set the content column
+							if( is_string( $item ) ) {
+								$string .= $col1 . str_repeat( ' ', 14 ) . $item . "\n\r";
+							}
+							else if( is_array( $item ) && count( $item ) > 0 ) {
+								// @todo -> add the repeated string for the array items after 1
+								foreach( $item as $k => $v ) {
+									$string .= $col1 . str_pad( $k . ':', 14 ) . $v . "\n\r";
+								}
+								unset( $k, $v );
+							}
+							else {
+								$string .= '---' . "\n\r";
+							}
+						}
+						unset( $key, $item );
+					}
+					unset( $tag, $comments_array );
+				}
+				else {
+					$string .= 'None available' . "\n\r";
+				}
+				$string .= str_repeat( '*', 80 ) . "\r\n\r\n";
 			}
+			$string .= "\n\r\n\r";
+
 			unset( $key, $hook );
 
             return $string;
 		}
 	
+/*
+        [mtli_classnames (string)] => Array:
+        (
+                [file (string)] => string[25] : ï¿½mime_type_link_images.phpï¿½
+                [line (string)] => int : 1168
+                [type (string)] => string[6] : ï¿½filterï¿½
+                [called_by (string)] => string[13] : ï¿½apply_filtersï¿½
+                [signature (string)] => string[51] : ï¿½apply_filters( 'mtli_classnames', $new_classnames )ï¿½
+                [params (string)] => Array:
+                (
+                        [0 (int)] => string[17] : ï¿½ $new_classnames ï¿½
+                )
+                [comment (string)] => string[199] : ï¿½/* Add filter hook for classnames   @api string $new_classnames Allows a developer to filter the class names string   before it is returned to the class attribute of the link tag * /ï¿½
+                [parsed_comment (string)] => Array:
+                (
+                        [description (string)] => Array:
+                        (
+                                [0 (int)] => string[30] : ï¿½Add filter hook for classnamesï¿½
+                        )
+                        [api (string)] => Array:
+                        (
+                                [0 (int)] => Array:
+                                (
+                                        [type (string)] => string[6] : ï¿½stringï¿½
+                                        [var_name (string)] => string[15] : ï¿½$new_classnamesï¿½
+                                        [comment (string)] => string[115] : ï¿½ Allows a developer to filter the class names string before it is returned to the class attribute of the link tagï¿½
+                                )
+                        )
+                )
+        )
+*/
+
+
 		/**
 		 *
 		 *
@@ -468,26 +561,106 @@ if ( !class_exists( 'wp_plugin_hook_documentor' ) ) {
 		 * @return string
 		 */
 		function generate_html_output() {
-			$string = '
-	<h2>' . $this->plugin_name . '</h2>';
+			$string = 'Actions and Filters for Plugin: ' . $this->plugin_name . "\r\n" . str_repeat( '=', 80 ) . "\r\n\r\n";
 
 			foreach( $this->hooks as $key => $hook ) {
-				$string .= '
-	<h3>' . ucfirst( $hook['type'] ) . ' : ' . $key . '</h3>
-
-				';
 				$string .= 'Hook: ' . "\t\t\t\t" . $key . "\n\r" .
 					'File Name: ' . "\t\t\t" . $hook['file'] . "\n\r" .
 					'Line Number: ' . "\t\t\t" . $hook['line'] . "\n\r" .
 					'Hook Type: ' . "\t\t\t" . $hook['type'] . "\n\r" .
-					'Parameters: ' . "\t\t\t" . $hook['params'] . "\n\r" .
-					'Available documentation: ' . "\t" . ( isset( $hook['docs'] ) ? $hook['docs'] : 'None available' ) . "\n\r\n\r";
+					'Called by: ' . "\t\t\t" . $hook['called_by'] . "\n\r" .
+					'Signature: ' . "\t\t\t" . $hook['signature'] . "\n\r" .
+					str_pad ( 'Parameters:', 80, "-", STR_PAD_RIGHT ) . "\n\r";
+
+				if( is_array( $hook['params'] ) && count( $hook['params'] ) > 0 ) {
+					foreach( $hook['params'] as $param ) {
+						$string .= $param . "\n\r";
+					}
+					unset( $param );
+				}
+				else {
+					$string .= 'None' . "\n\r";
+				}
+
+				$string .= str_pad ( 'Available documentation:', 80, "-", STR_PAD_RIGHT ) . "\n\r";
+				if( is_array( $hook['parsed_comment'] ) && count( $hook['parsed_comment'] )> 0 ) {
+					foreach( $hook['parsed_comment'] as $tag => $comments_array ) {
+
+						foreach( $comments_array as $key => $item ) {
+							// Set the tag column
+							if( $key === 0 ) {
+//								$string .= str_pad( $tag . ' :', 20 );
+								$col1 = str_pad( $tag . ' :', 18 );
+							}
+							else {
+//								$string .= $prefix = str_repeat( ' ', 20 );
+								$col1 = str_repeat( ' ', 18 );
+                            }
+                            
+                            // Set the content column
+							if( is_string( $item ) ) {
+								$string .= $col1 . str_repeat( ' ', 14 ) . $item . "\n\r";
+							}
+							else if( is_array( $item ) && count( $item ) > 0 ) {
+								// @todo -> add the repeated string for the array items after 1
+								foreach( $item as $k => $v ) {
+									$string .= $col1 . str_pad( $k . ':', 14 ) . $v . "\n\r";
+								}
+								unset( $k, $v );
+							}
+							else {
+								$string .= '---' . "\n\r";
+							}
+						}
+						unset( $key, $item );
+					}
+					unset( $tag, $comments_array );
+				}
+				else {
+					$string .= 'None available' . "\n\r";
+				}
+				$string .= str_repeat( '*', 80 ) . "\r\n\r\n";
 			}
+			$string .= "\n\r\n\r";
+
 			unset( $key, $hook );
 
             return $string;
 		}
 	
+
+
+/*
+        [mtli_classnames (string)] => Array:
+        (
+                [file (string)] => string[25] : ï¿½mime_type_link_images.phpï¿½
+                [line (string)] => int : 1168
+                [type (string)] => string[6] : ï¿½filterï¿½
+                [called_by (string)] => string[13] : ï¿½apply_filtersï¿½
+                [signature (string)] => string[51] : ï¿½apply_filters( 'mtli_classnames', $new_classnames )ï¿½
+                [params (string)] => Array:
+                (
+                        [0 (int)] => string[17] : ï¿½ $new_classnames ï¿½
+                )
+                [comment (string)] => string[199] : ï¿½/* Add filter hook for classnames   @api string $new_classnames Allows a developer to filter the class names string   before it is returned to the class attribute of the link tag * /ï¿½
+                [parsed_comment (string)] => Array:
+                (
+                        [description (string)] => Array:
+                        (
+                                [0 (int)] => string[30] : ï¿½Add filter hook for classnamesï¿½
+                        )
+                        [api (string)] => Array:
+                        (
+                                [0 (int)] => Array:
+                                (
+                                        [type (string)] => string[6] : ï¿½stringï¿½
+                                        [var_name (string)] => string[15] : ï¿½$new_classnamesï¿½
+                                        [comment (string)] => string[115] : ï¿½ Allows a developer to filter the class names string before it is returned to the class attribute of the link tagï¿½
+                                )
+                        )
+                )
+        )
+*/
 
 		/**
 		 *
@@ -508,17 +681,55 @@ if ( !class_exists( 'wp_plugin_hook_documentor' ) ) {
 
 			foreach( $this->hooks as $key => $hook ) {
 				$node = $hooks_node->addChild( 'hook' );
+				$node->addAttribute( 'name', $key );
 				$node->addAttribute( 'type', $hook['type'] );
 				$node->addAttribute( 'file', $hook['file'] );
 				$node->addAttribute( 'line_number', $hook['line'] );
-				$node->addChild( 'name', $key );
-				$node->addChild( 'parameters', $hook['params'] );
-				$node->addChild( 'documentation', $hook['docs'] );
+				$node->addAttribute( 'called_by', $hook['called_by'] );
+				$node->addChild( 'signature', $hook['signature'] );
+				
+				if( is_array( $hook['params'] ) && count( $hook['params'] ) > 0 ) {
+					$param_node = $node->addChild( 'parameters' );
+					foreach( $hook['params'] as $param ) {
+						$param_node->addChild( 'param', $param );
+					}
+					unset( $param, $param_node );
+				}
+
+				if( is_array( $hook['parsed_comment'] ) && count( $hook['parsed_comment'] )> 0 ) {
+
+					$doc_node = $node->addChild( 'documentation' );
+					$tags_node = $doc_node->addChild( 'tags' );
+					foreach( $hook['parsed_comment'] as $tag => $comments_array ) {
+
+						foreach( $comments_array as $key => $item ) {
+
+							if( is_string( $item ) ) {
+								$tag_node = $tags_node->addChild( 'tag', preg_replace( '`[\r\n]`', '', $item ) );
+								$tag_node->addAttribute( 'name', $tag );
+							}
+							else if( is_array( $item ) && count( $item ) > 0 ) {
+								$tag_node = $tags_node->addChild( 'tag' );
+								$tag_node->addAttribute( 'name', $tag );
+
+								foreach( $item as $k => $v ) {
+									$tag_node->addChild( $k, preg_replace( '`[\r\n]`', '', $v ) );
+								}
+								unset( $tag_node, $k, $v );
+							}
+						}
+						unset( $tag_node_plural, $key, $item );
+					}
+					unset( $doc_node, $tag, $comments_array );
+				}
 			}
 			unset( $hooks_node, $key, $hook, $node );
-
             return $xml;
 		}
+
+		
+
+
 		
 		/**
 		 *
@@ -543,10 +754,13 @@ if ( !class_exists( 'wp_plugin_hook_documentor' ) ) {
 
 			switch( $this->format ) {
 				case 'textarea':
+					$output = $this->format_textarea_output( $output );
 					break;
 				case 'view':
+					$output = $this->format_view_output( $output );
 					break;
 				case 'file':
+					$output = $this->format_file_output( $output );
 					break;
 			}
 			
@@ -557,30 +771,37 @@ if ( !class_exists( 'wp_plugin_hook_documentor' ) ) {
 
 
 		function format_textarea_output( $output ) {
-			$string = '<textarea>';
+			$string = '<form id="wpphd-output"><textarea>';
 
 			switch( $this->style ) {
 				case 'html':
-					$string .= htmlspecialchars ( $output, ENT_QUOTES | ENT_XHTML, 'UTF-8', true );
+					$string .= htmlspecialchars ( $output, ENT_QUOTES, 'UTF-8', true );
 					break;
 	
 				case 'xml':
-					$string .= htmlspecialchars ( $output->asXML(), ENT_QUOTES | ENT_XML1, 'UTF-8', true );
+				
+					$string .= htmlspecialchars ( $this->get_pretty_xml( $output->asXML() ), ENT_QUOTES, 'UTF-8', true );
 					break;
 	
 				case 'text':
-					$string .= htmlspecialchars ( $output, ENT_QUOTES | ENT_HTML401, 'UTF-8', true );
+					$string .= htmlspecialchars ( $output, ENT_QUOTES, 'UTF-8', true );
 					break;
 					
 				case 'php':
 					$output = '<?php' . "\n\r\n\r" . print_r( $output, true ) . "\n\r\n\r" . '?>';
-					$string .= htmlspecialchars ( $output, ENT_QUOTES | ENT_XHTML, 'UTF-8', true );
+					$string .= htmlspecialchars ( $output, ENT_QUOTES, 'UTF-8', true );
 					break;
 			}
-			$string .= '</textarea>';
+			$string .= '</textarea></form>';
 			return $string;
 		}
 		
+		function get_pretty_xml( $output ) {
+			$dom = new DOMDocument();
+			$dom->loadXML( $output );
+			$dom->formatOutput = true;
+			return $dom->saveXML();
+		}
 
 		function format_view_output( $output ) {
 			

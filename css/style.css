@@ -3,7 +3,6 @@
 	font-size: 14px;
 }
 form#wpphd-form {
-
 }
 
 form#wpphd-form input[type="text"] {
@@ -23,4 +22,15 @@ form#wpphd-form .wpphd-column {
 
 form#wpphd-form .wpphd-column p {
 	height: 2.3em;
+}
+
+
+
+form#wpphd-output {
+}
+
+form#wpphd-output textarea {
+	width: 900px;
+	height: 600px;
+	min-height: 600px;
 }
