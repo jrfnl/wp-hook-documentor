@@ -210,7 +210,7 @@ if ( !class_exists( 'wp_hook_documentor_testcase' ) ) {
 			$param = apply_filters( 'filter-with-internal', $param );
 
 			// This comment should not be ignored
-			// @internal This is an ignored comment
+			// @internal This is an internal comment and should be ignored
 			$param = apply_filters( 'filter-with-internal-and-ok', $param );
 
 			// @internal This is an internal comment - docblock should be ignored as ambiguous
@@ -235,11 +235,65 @@ if ( !class_exists( 'wp_hook_documentor_testcase' ) ) {
 			$param = apply_filters( 'filter_with_ignore', $param );
 
 			// This comment should not be ignored
-			// @ignore This is an ignored comment
+			// @ignore This is an ignored comment and should be ignored
 			$param = apply_filters( 'filter_with_ignore_and_ok', $param );
 
 			// @ignore This is an ignored comment - docblock should be ignored as ambiguous
 			$param = apply_filters( 'filter_with_ignore_and_ambigiuous', $param );
+
+			return $param;
+		}
+		
+		
+		/**
+		 * Test method
+		 *
+		 * @api A description for the filter
+		 * @api string	A description of the string to be filtered
+		 *
+		 * @param 	string	$param
+		 * @return string
+		 */
+		function test_ignore_internal_combined( $param ) {
+
+			// @ignore This is an ignored comment - docblock should be used
+			// @internal This is an internal comment - docblock should be used
+			$param = apply_filters( 'filter_with_ignore_internal', $param );
+
+			// This comment should not be ignored
+			// @ignore This is an ignored comment and should be ignored
+			// @internal This is an internal comment and should be ignored
+			$param = apply_filters( 'filter_with_ignore_internal_and_ok', $param );
+
+			// @ignore This is an ignored comment - docblock should be ignored as ambiguous
+			// @internal This is an internal comment - docblock should be ignored as ambiguous
+			$param = apply_filters( 'filter_with_ignore_internal_and_ambigiuous', $param );
+
+			return $param;
+		}
+		
+		
+		/**
+		 * Test method
+		 *
+		 * @api A description for the action
+		 * @api string	A description of the parameters passed
+		 *
+		 * @param 	string	$param
+		 * @return string
+		 */
+		function test_comments_with_whitespace( $param ) {
+
+			// This is an internal comment - docblock should be used
+
+			$param = apply_filters( 'filter-comment-extra-whitespace', $param );
+
+			// This comment should not be ignored
+
+			// @internal This is an internal comment and should be ignored
+
+
+			$param = apply_filters( 'filter-with-internal-and-ok-extra-whitespace', $param );
 
 			return $param;
 		}
