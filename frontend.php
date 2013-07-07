@@ -129,47 +129,63 @@ if( self::DEV ) { pr_var( $_POST, '$_POST', true ); }
 			<label for="wpd-source">Please provide the source location:
 				<input id="wpd-source" name="wpd-source" type="text" value="' . ( $this->source !== '' ? $this->source : $this->default_source ) . '" />
 			</label>
-		</div>
+		</div>';
+		
+
+		if( count( $this->sort_options ) > 1 ) {
+			$html .= '
 		<div class="wpd-column">
 			<p>How would you like the hooks to be sorted ?</p>';
 
-		foreach( $this->sort_options as $key => $sort_by ) {
-			$html .= '
+
+			foreach( $this->sort_options as $key => $sort_by ) {
+				$html .= '
 			<label for="wpd-sort-by-' . $key . '">
 				<input id="wpd-sort-by-' . $key . '" name="wpd-sort-by" type="radio" value="' . $key . '" ' . ( $key === $this->sort_by ? 'checked="checked"' : '' ) . '" />
 				' . $sort_by . '
 			</label><br />';
+			}
+
+			$html .= '
+		</div>';
 		}
 
-		$html .= '
-		</div>
-
+		if( count( $this->styles ) > 1 ) {
+			$html .= '
 		<div class="wpd-column">
 			<p>In which style would you like to receive the output ?</p>';
 
-		foreach( $this->styles as $key => $style ) {
-			$html .= '
+			foreach( $this->styles as $key => $style ) {
+				$html .= '
 			<label for="wpd-style-' . $key . '">
 				<input id="wpd-style-' . $key . '" name="wpd-style" type="radio" value="' . $key . '" ' . ( $key === $this->style ? 'checked="checked"' : '' ) . '" />
 				' . $style . '
 			</label><br />';
+			}
+
+			$html .= '
+		</div>';
 		}
 
-		$html .= '
-		</div>
 
+		if( count( $this->formats ) > 1 ) {
+			$html .= '
 		<div class="wpd-column">
 			<p>In which format would you like to received the output ?</p>';
-		foreach( $this->formats as $key => $format ) {
-			$html .= '
+
+			foreach( $this->formats as $key => $format ) {
+				$html .= '
 			<label for="wpd-format-' . $key . '">
 				<input id="wpd-format-' . $key . '" name="wpd-format" type="radio" value="' . $key . '" ' . ( $key === $this->format ? 'checked="checked"' : '' ) . '" />
 				' . $format . '
 			</label><br />';
-		}
+			}
 
+			$html .= '
+		</div>';
+		}
+		
 		$html .= '
-		</div>
 		<div class="wpd-row">
 			 <input type="submit" id="wpd-submit" value="Submit" />
 		</div>
