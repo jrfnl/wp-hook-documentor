@@ -1,4 +1,4 @@
-wp-plugin-hook-documentor
+wp-hook-documentor
 =========================
 
-Application to document action and filters hook in WordPress plugins
+Application to document action and filters hooks in WordPress plugins and themes

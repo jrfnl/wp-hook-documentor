@@ -411,11 +411,12 @@ if( !function_exists('do_error_backtrace') ) {
 		}
 		$trace = debug_backtrace();
 		array_shift($trace);
-		if(php_sapi_name() == 'cli') {
+		if(php_sapi_name() == 'cli' && ini_get('display_errors')) {
 			echo 'Backtrace from ' . $type . ' \'' . $errstr . '\' at ' . $errfile . ' ' . $errline . ':' . "\n";
 			foreach($trace as $item)
 				echo '  ' . (isset($item['file']) ? $item['file'] : '<unknown file>') . ' ' . (isset($item['line']) ? $item['line'] : '<unknown line>') . ' calling ' . $item['function'] . '()' . "\n";
-		} else {
+			flush();
+		} else if( ini_get('display_errors') ) {
 			echo '<p class="error_backtrace">' . "\n";
 			echo '  Backtrace from ' . $type . ' \'' . $errstr . '\' at ' . $errfile . ' ' . $errline . ':' . "\n";
 			echo '  <ol>' . "\n";
@@ -423,6 +424,7 @@ if( !function_exists('do_error_backtrace') ) {
 				echo '	<li>' . (isset($item['file']) ? $item['file'] : '<unknown file>') . ' ' . (isset($item['line']) ? $item['line'] : '<unknown line>') . ' calling ' . $item['function'] . '()</li>' . "\n";
 			echo '  </ol>' . "\n";
 			echo '</p>' . "\n";
+			flush();
 		}
 		if(ini_get('log_errors')) {
 			$items = array();
@@ -431,9 +433,7 @@ if( !function_exists('do_error_backtrace') ) {
 			$message = 'Backtrace from ' . $type . ' \'' . $errstr . '\' at ' . $errfile . ' ' . $errline . ': ' . join(' | ', $items);
 			error_log($message);
 		}
-	
-		flush();
-	
+
 		if($fatal)
 			exit(1);
 	}

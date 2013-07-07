@@ -1,17 +1,17 @@
 <?php
 /**
- * File: class.wp-plugin-hook-documentor.php
- * @package wp-plugin-hook-documentor
+ * File: class.wp-hook-documentor.php
+ * @package wp-hook-documentor
  */
 
 /**
- * WordPress Plugin Hook Documentor
+ * WordPress Hook Documentor
  *
- * @package wp-plugin-hook-documentor
+ * @package wp-hook-documentor
  * @author	Juliette Reinders Folmer, {@link http://www.adviesenzo.nl/ Advies en zo} -
- *  <wp-plugin-hook-documentor@adviesenzo.nl>
+ *  <wp-hook-documentor@adviesenzo.nl>
  *
- * @version	0.2
+ * @version	1.0
  * @since	2013-07-03 // Last changed: by Juliette Reinders Folmer
  * @copyright	Advies en zo, Meedenken en -doen �2013
  * @license http://www.opensource.org/licenses/lgpl-license.php GNU Lesser General Public License
@@ -19,7 +19,7 @@
  * @example	example/example.php
  *
  */
- 
+
 /**
  * Roadmap / Todo:
  * - Build the bloody thing ;-)
@@ -32,14 +32,16 @@
  *
  */
 
-if ( !class_exists( 'wp_plugin_hook_documentor' ) ) {
+if ( !class_exists( 'wp_hook_documentor' ) ) {
 
-	class wp_plugin_hook_documentor {
+	class wp_hook_documentor {
 		
+		/* *** CLASS CONSTANTS *** */
+
 		/**
 		 * @const	string	version number of this class
 		 */
-		const VERSION = '0.2';
+		const VERSION = '1.0';
 
 		/**
 		 * @const	bool	temporary constant for use during initial development
@@ -47,35 +49,8 @@ if ( !class_exists( 'wp_plugin_hook_documentor' ) ) {
 		const DEV = true;
 
 
+		/* *** CLASS PROPERTIES *** */
 
-		/**
-		 * @param	string	$source		path to the source directory to walk as received
-		 */
-		public $source;
-		
-		/**
-		 * @param	string	$source		path to the source directory to walk as received
-		 */
-//		public $source_rel = '../../debug-bar-constants/debug-bar-constants';
-		public $source_rel = '../../MimeTypes-Link-Icons';
-
-		
-		/**
-		 * @param	string	$source_walkable		path to the source directory to walk
-		 */
-		public $source_walkable;
-	
-		/**
-		 * @param
-		 */
-//		public $hierarchical;
-	
-	
-		/**
-		 * @param	string	$sort_by	chosen sort method
-		 */
-		public $sort_by;
-		
 		/**
 		 * To translate the text strings, override the value strings of the property in your extended class
 		 * If you want to add sorting methods, make sure you override the sort_hooks() method as well
@@ -85,14 +60,12 @@ if ( !class_exists( 'wp_plugin_hook_documentor' ) ) {
 		public $sort_options = array(
 			'name'				=>	'Hook name',
 			'file_line'			=>	'File, then line number',
+			'file_name'			=>	'File, then hook name',
 			'type_name'			=>	'Hook type, then hook name',
 			'type_file_line'	=>	'Hook type, then file name and line number',
+			'type_file_name'	=>	'Hook type, then file name and then hook name',
 		);
 
-		/**
-		 * @param	string	$style		chosen output style
-		 */
-		public $style;
 
 		/**
 		 * To translate the text strings, override the value strings of the property in your extended class
@@ -106,10 +79,6 @@ if ( !class_exists( 'wp_plugin_hook_documentor' ) ) {
 			   'php'	=>	'PHP',
 		);
 
-		/**
-		 * @param	string	$format		chosen output format
-		 */
-		public $format;
 
 		/**
 		 * To translate the text strings, override the value strings of the property in your extended class
@@ -122,15 +91,10 @@ if ( !class_exists( 'wp_plugin_hook_documentor' ) ) {
 			'view'		=>	'Show the result in the chosen style',
 			'file'		=>	'Present the result as a file',
 		);
-		
-		
+
+
 		/**
-		 * @param	array	$extensions	Which file extensions to look for
-		 */
-		private $extensions = array( 'php' );
-		
-		/**
-		 * @param	array	$hook_names		Array of wordpress function names which call hooks and their type
+		 * @param	array	$hook_names		Array of wordpress function names which call hooks => their type
 		 */
 		private $hook_names = array(
 			'apply_filters'				=>	'filter',
@@ -138,10 +102,38 @@ if ( !class_exists( 'wp_plugin_hook_documentor' ) ) {
 			'do_action'					=>	'action',
 			'do_action_ref_array'		=>	'action',
 		);
-		
-		private $token_type = 'T_STRING';
 
-	
+		private $token_type = 'T_STRING';
+		
+		
+		/* *** Properties storing the received $_POST variables *** */
+
+		/**
+		 * @param	string	$source		path to the source directory to walk as received
+		 */
+		public $source;
+
+
+		/**
+		 * @param	string	$sort_by	chosen sort method
+		 */
+		public $sort_by;
+
+
+		/**
+		 * @param	string	$style		chosen output style
+		 */
+		public $style;
+
+		/**
+		 * @param	string	$format		chosen output format
+		 */
+		public $format;
+
+
+
+		/* *** Properties storing retrieved information *** */
+
 		/**
 		 * @param	string	$plugin_name	Store for the retrieved plugin name
 		 */
@@ -160,28 +152,42 @@ if ( !class_exists( 'wp_plugin_hook_documentor' ) ) {
 		 *								)
 		 */
 		public $hooks = array();
-	
-	
-		function __construct( $source = '', /*$hierarchical = false,*/ $sort_by = 'name', $style = 'html', $format = 'textarea' ) {
+
+
+        /**
+         * Constructor
+         *
+         * @param	string	$source		Path to the source to analyse
+         * @param	string	$sort_by	Preferred sort order
+         * @param	string	$style		Preferred output style
+         * @param	string	$format		Preferred output format
+         */
+        function __construct( $source = '', $sort_by = 'name', $style = 'html', $format = 'textarea' ) {
 
 			if( version_compare( PHP_VERSION, '5', '<' ) === true ) {
-				trigger_error( 'The WP plugin hook documentor requires PHP5+', E_USER_NOTICE );
+				trigger_error( 'The WP hook documentor requires PHP5+', E_USER_NOTICE );
 				exit;
 			}
 
 			if( self::DEV === true ) {
 				include_once( 'include/jrfdebug.inc.php' );
+				set_error_handler('do_error_backtrace');
 			}
 
 			$this->validate_params( $source, 'source' );
-//			$this->validate_params( $hierarchical, 'hierarchical' );
 			$this->validate_params( $sort_by, 'sort_by' );
 			$this->validate_params( $style, 'style' );
 			$this->validate_params( $format, 'format' );
 		}
 
 
-		function validate_params( $value, $param ) {
+        /**
+         * Validate & store parameters received in the constructor
+         *
+         * @param	string	$value		Parameter value
+         * @param	string	$param		Parameter name
+         */
+        function validate_params( $value, $param ) {
 			switch( $param ) {
 
 				// @todo: add validation for whether directory can be walked
@@ -190,14 +196,6 @@ if ( !class_exists( 'wp_plugin_hook_documentor' ) ) {
 						$this->source = $value;
 					}
 					break;
-
-				// @todo: maybe add a way to allow 0/1 as int and/or string
-/*				case 'hierarchical':
-					if( is_bool( $value ) ) {
-						$this->hierarchical = $value;
-					}
-					break;
-*/
 
 				case 'sort_by':
 					if( array_key_exists( $value, $this->sort_options ) ) {
@@ -210,7 +208,7 @@ if ( !class_exists( 'wp_plugin_hook_documentor' ) ) {
 						$this->style = $value;
 					}
 					break;
-	
+
 				case 'format':
 					if( array_key_exists( $value, $this->formats ) ) {
 						$this->format = $value;
@@ -218,91 +216,98 @@ if ( !class_exists( 'wp_plugin_hook_documentor' ) ) {
 					break;
 			}
 		}
-	
 
-		
-		
-		function display_output() {
-			
+
+        /**
+         * Retrieve the output formatted as per the posted preferences
+         *
+         * @return bool|string|void
+         */
+        function get_output() {
+
 			$this->get_hooks();
 
 			if( is_array( $this->hooks ) && count( $this->hooks ) > 0 ) {
 
 				$this->sort_hooks();
-				
+//pr_var( $this->hooks, 'Sorted hooks', true );
 				$output = $this->generate_output();
 
 
-                return $this->format_output( $output );
+				return $this->format_output( $output );
 			}
-            else {
-                return false;
-            }
+			else {
+				return false;
+			}
 		}
 
-		
-		
-		function get_hooks() {
+
+        /**
+         * Get the hooks
+         *
+         * @return array
+         */
+        function get_hooks() {
 			// Efficiency - in case someone wants the same output in several ways, no need to get the hooks again
 			if( isset( $this->hooks ) && ( is_array( $this->hooks ) && count( $this->hooks ) > 0 ) ) {
 				return $this->hooks;
 			}
 
-			include_once( 'include/class.directorywalker.php' );
+			require_once 'include/class.wp_tokenizer.php';
+			$tokenizer = new wpd_wp_tokenizer( $this->source );
+			$this->plugin_name = $tokenizer->plugin_name;
 
-			$filelist = wpphd_directory_walker::get_file_list( $this->source, true, $this->extensions );
+			$slash = ( strrchr( $this->source, DIRECTORY_SEPARATOR ) === DIRECTORY_SEPARATOR ? '' : DIRECTORY_SEPARATOR );
 
-//			pr_var( $filelist, 'retrieved file list', true );
+			$hooks = array();
+			$file_list = $tokenizer->get_files( $this->source );
 
+			foreach( $file_list as $file_name ) {
+				$tokens = $tokenizer->get_tokens( $this->source . $slash . $file_name );
+				$filtered_tokens = $tokenizer->filter_on_value_and_type( $tokens, array_keys( $this->hook_names ), $this->token_type );
 
-			require_once 'include/class.wp_plugin_tokenizer.php';
+//pr_var( $filtered_tokens, 'filtered list', true );
 
-  			$slash = ( strrchr( $this->source, DIRECTORY_SEPARATOR ) === DIRECTORY_SEPARATOR ? '' : DIRECTORY_SEPARATOR );
-  			
-  			$hooks = array();
+				foreach( $filtered_tokens as $k => $token ) {
 
+					$signature = $tokenizer->get_signature( $tokens, $token, $k );
+					$parsed_signature = $this->parse_hook_signature( $signature );
 
-			foreach( $filelist as $filename ) {
-				$ts = new wpphd_wp_plugin_tokenizer( $this->source . $slash . $filename );
-				
-				$this->plugin_name = $ts->get_plugin_name( $this->plugin_name );
-				
-//				pr_var( $ts, 'PHP_Token_Stream class for: ' . $this->source . $slash . $filename, true );
+//					$parsed_comment = $tokenizer->parse_nearest_comment( /*$token,*/ $k );
+/*		public function parse_nearest_comment( $tokens, $key, $tags = null ) {
+			return $this->parse_comment( $this->get_nearest_comment( $tokens, $key, $tags ), $tags );
+		}*/
+					$parsed_comment = $tokenizer->parse_nearest_comment( $tokens, $k );
+					// @todo check for @ignore and @internal comment properties and ignore those & try to retrieve another comment higher up
 
-
-				$filtered = $ts->filter_on_value_and_type( array_keys( $this->hook_names ), $this->token_type );
-
-//				pr_var( $filtered, 'filtered list', true );
-
-
-				foreach( $filtered as $k => $token ) {
-					
-					$signature = $ts->get_signature( $token, $k );
-	  		 		$parsed_signature = $this->parse_hook_signature( $signature );
-
-	  		 		$hooks[$parsed_signature['hook_name']] = array(
-						'file'				=>	$filename,
+					$hooks[$parsed_signature['hook_name']] = array(
+						'file'				=>	$file_name,
 						'line'				=>	$token->getLine(),
 						'type'				=>	$this->hook_names[$token->__toString()],
 						'called_by'			=>	$token->__toString(),
 						'signature'			=>	$signature,
 						'params'			=>	$parsed_signature['params'],
-						'comment'			=>	$ts->get_nearest_comment( $token, $k ),
-						'parsed_comment'	=>	$ts->parse_nearest_comment( $token, $k ),
-//						'apidocblock'	=> $ts->get_nearest_comment( $token, $k, 'api' ),
-	  		 		);
+						'comment'			=>	$tokenizer->get_nearest_comment( $tokens, $k ),
+						'parsed_comment'	=>	$parsed_comment,
+//						'apidocblock'		=>	$tokenizer->get_nearest_comment( $token, $k, 'api' ),
+					);
 				}
 
 			}
 
 			$this->hooks = $hooks;
-pr_var( $this->hooks, 'The hooks with gathered info', true );
+//pr_var( $this->hooks, 'The hooks with gathered info', true );
 		}
-		
-		
-		function parse_hook_signature( $sig ) {
+
+
+        /**
+         * Parse a hook signature string to hook name and parameters
+         *
+         * @param	string	$sig	Signature string
+         * @return	array|string	Array containing parsed string or original string if parsing failed
+         */
+        function parse_hook_signature( $sig ) {
 			$hook_names = implode( '|', array_keys( $this->hook_names ) );
-			//apply_filters( 'mtli_filesize', '(' . $filesize . ')' )
 			$found = preg_match( '`^(?:' . $hook_names . ')\s*\(\s*([\'"])([\w-]+)\1\s*,(.+)\)$`', $sig, $matches );
 			if( $found > 0 ) {
 				$sig = array(
@@ -314,8 +319,9 @@ pr_var( $this->hooks, 'The hooks with gathered info', true );
 			return $sig;
 		}
 
-	
-		
+
+		/* *** METHODS TO SORT THE HOOKS *** */
+
 		/**
 		 * Sorts the hooks array by the hook name using natural case sorting
 		 * Alters the value of $this->hooks
@@ -323,13 +329,10 @@ pr_var( $this->hooks, 'The hooks with gathered info', true );
 		 * Make sure to override this method in your own class extension if you want
 		 * to use a different sorting mechanism or add more sorting methods
 		 *
-		 * @since 0.2
-		 * @author Juliette Reinders Folmer
-		 *
-		 * @return void
+		 * @return	void
 		 */
 		function sort_hooks() {
-			
+
 			switch( $this->sort_by ) {
 				case 'name':
 					$this->sort_hooks_by_name();
@@ -337,23 +340,26 @@ pr_var( $this->hooks, 'The hooks with gathered info', true );
 				case 'file_line':
 					$this->sort_hooks_by_file_and_line_nr();
 					break;
+				case 'file_name':
+					$this->sort_hooks_by_file_and_name();
+					break;
 				case 'type_name':
 					$this->sort_hooks_by_type_and_name();
 					break;
 				case 'type_file_line':
 					$this->sort_hooks_by_type_file_and_line_nr();
 					break;
+				case 'type_file_name':
+					$this->sort_hooks_by_type_file_and_name();
+					break;
 			}
 			return;
 		}
-		
+
 		/**
 		 * Sort the hooks array by hook name
 		 *
-		 * @since 0.2
-		 * @author Juliette Reinders Folmer
-		 *
-		 * @return void
+		 * @return	void
 		 */
 		function sort_hooks_by_name() {
 			uksort( $this->hooks, 'strnatcasecmp' );
@@ -362,59 +368,80 @@ pr_var( $this->hooks, 'The hooks with gathered info', true );
 		/**
 		 * Sort the hooks array by file name and line number
 		 *
-		 * @since 0.2
-		 * @author Juliette Reinders Folmer
-		 *
-		 * @return void
+		 * @return	void
 		 */
 		function sort_hooks_by_file_and_line_nr() {
 			foreach( $this->hooks as $key => $array ) {
-			    $file[$key]	= $array['file'];
-			    $line[$key]	= $array['line'];
+				$file[$key]	= $array['file'];
+				$line[$key]	= $array['line'];
 			}
 			array_multisort( $file, SORT_ASC, $line, SORT_ASC, $this->hooks );
 		}
 
+		/**
+		 * Sort the hooks array by file name and hook name
+		 *
+		 * @return	void
+		 */
+		function sort_hooks_by_file_and_name() {
+			$name = array_keys( $this->hooks );
+			foreach( $this->hooks as $key => $array ) {
+				$file[$key]	= $array['file'];
+			}
+			array_multisort( $file, SORT_ASC, $name, SORT_ASC, $this->hooks );
+		}
 
 		/**
 		 * Sort the hooks array by hook type and hook name
 		 *
-		 * @since 0.2
-		 * @author Juliette Reinders Folmer
-		 *
-		 * @return void
+		 * @return	void
 		 */
 		function sort_hooks_by_type_and_name() {
+			$name = array_keys( $this->hooks );
 			foreach( $this->hooks as $key => $array ) {
-			    $type[$key]	= $array['type'];
-			    $name[$key]	= $key;
+				$type[$key]	= $array['type'];
 			}
 			array_multisort( $type, SORT_ASC, $name, SORT_ASC, $this->hooks );
 		}
 
-
 		/**
 		 * Sort the hooks array by hook type, file name and line number
 		 *
-		 * @since 0.2
-		 * @author Juliette Reinders Folmer
-		 *
-		 * @return void
+		 * @return	void
 		 */
 		function sort_hooks_by_type_file_and_line_nr() {
 			foreach( $this->hooks as $key => $array ) {
-			    $type[$key]	= $array['type'];
-			    $file[$key]	= $array['file'];
-			    $line[$key]	= $array['line'];
+				$type[$key]	= $array['type'];
+				$file[$key]	= $array['file'];
+				$line[$key]	= $array['line'];
 			}
 			array_multisort( $type, SORT_ASC, $file, SORT_ASC, $line, SORT_ASC, $this->hooks );
 		}
+		
+		/**
+		 * Sort the hooks array by hook type, file name and hook name
+		 *
+		 * @return	void
+		 */
+		function sort_hooks_by_type_file_and_name() {
+			$name = array_keys( $this->hooks );
+			foreach( $this->hooks as $key => $array ) {
+				$type[$key]	= $array['type'];
+				$file[$key]	= $array['file'];
+			}
+			array_multisort( $type, SORT_ASC, $file, SORT_ASC, $name, SORT_ASC, $this->hooks );
+		}
 
 
+		/* *** METHODS TO GENERATE A VARIETY OF OUTPUT *** */
 
 
-
-		function generate_output() {
+        /**
+         * Generate the output
+         *
+         * @return	array|null|object|string
+         */
+        function generate_output() {
 
 			$output = null;
 
@@ -440,14 +467,11 @@ pr_var( $this->hooks, 'The hooks with gathered info', true );
 
 
 		/**
-		 *
+		 * Generate the output as text
 		 *
 		 * Want different text output ? Just override this method in your own extended class.
 		 *
-		 * @since 0.1
-		 * @author Juliette Reinders Folmer
-		 *
-		 * @return string
+		 * @return	string
 		 */
 		function generate_text_output() {
 			$string = 'Actions and Filters for Plugin: ' . $this->plugin_name . "\r\n" . str_repeat( '=', 80 ) . "\r\n\r\n";
@@ -484,9 +508,9 @@ pr_var( $this->hooks, 'The hooks with gathered info', true );
 							else {
 //								$string .= $prefix = str_repeat( ' ', 20 );
 								$col1 = str_repeat( ' ', 18 );
-                            }
-                            
-                            // Set the content column
+							}
+
+							// Set the content column
 							if( is_string( $item ) ) {
 								$string .= $col1 . str_repeat( ' ', 14 ) . $item . "\n\r";
 							}
@@ -514,51 +538,48 @@ pr_var( $this->hooks, 'The hooks with gathered info', true );
 
 			unset( $key, $hook );
 
-            return $string;
+			return $string;
 		}
-	
+
 /*
-        [mtli_classnames (string)] => Array:
-        (
-                [file (string)] => string[25] : �mime_type_link_images.php�
-                [line (string)] => int : 1168
-                [type (string)] => string[6] : �filter�
-                [called_by (string)] => string[13] : �apply_filters�
-                [signature (string)] => string[51] : �apply_filters( 'mtli_classnames', $new_classnames )�
-                [params (string)] => Array:
-                (
-                        [0 (int)] => string[17] : � $new_classnames �
-                )
-                [comment (string)] => string[199] : �/* Add filter hook for classnames   @api string $new_classnames Allows a developer to filter the class names string   before it is returned to the class attribute of the link tag * /�
-                [parsed_comment (string)] => Array:
-                (
-                        [description (string)] => Array:
-                        (
-                                [0 (int)] => string[30] : �Add filter hook for classnames�
-                        )
-                        [api (string)] => Array:
-                        (
-                                [0 (int)] => Array:
-                                (
-                                        [type (string)] => string[6] : �string�
-                                        [var_name (string)] => string[15] : �$new_classnames�
-                                        [comment (string)] => string[115] : � Allows a developer to filter the class names string before it is returned to the class attribute of the link tag�
-                                )
-                        )
-                )
-        )
+		[mtli_classnames (string)] => Array:
+		(
+				[file (string)] => string[25] : �mime_type_link_images.php�
+				[line (string)] => int : 1168
+				[type (string)] => string[6] : �filter�
+				[called_by (string)] => string[13] : �apply_filters�
+				[signature (string)] => string[51] : �apply_filters( 'mtli_classnames', $new_classnames )�
+				[params (string)] => Array:
+				(
+						[0 (int)] => string[17] : � $new_classnames �
+				)
+				[comment (string)] => string[199] : �/* Add filter hook for classnames   @api string $new_classnames Allows a developer to filter the class names string   before it is returned to the class attribute of the link tag * /�
+				[parsed_comment (string)] => Array:
+				(
+						[description (string)] => Array:
+						(
+								[0 (int)] => string[30] : �Add filter hook for classnames�
+						)
+						[api (string)] => Array:
+						(
+								[0 (int)] => Array:
+								(
+										[type (string)] => string[6] : �string�
+										[var_name (string)] => string[15] : �$new_classnames�
+										[comment (string)] => string[115] : � Allows a developer to filter the class names string before it is returned to the class attribute of the link tag�
+								)
+						)
+				)
+		)
 */
 
 
 		/**
-		 *
+		 * Generate the output as html
 		 *
 		 * Want different html output ? Just override this method in your own extended class.
 		 *
-		 * @since 0.1
-		 * @author Juliette Reinders Folmer
-		 *
-		 * @return string
+		 * @return	string
 		 */
 		function generate_html_output() {
 			$string = 'Actions and Filters for Plugin: ' . $this->plugin_name . "\r\n" . str_repeat( '=', 80 ) . "\r\n\r\n";
@@ -595,9 +616,9 @@ pr_var( $this->hooks, 'The hooks with gathered info', true );
 							else {
 //								$string .= $prefix = str_repeat( ' ', 20 );
 								$col1 = str_repeat( ' ', 18 );
-                            }
-                            
-                            // Set the content column
+							}
+
+							// Set the content column
 							if( is_string( $item ) ) {
 								$string .= $col1 . str_repeat( ' ', 14 ) . $item . "\n\r";
 							}
@@ -625,52 +646,49 @@ pr_var( $this->hooks, 'The hooks with gathered info', true );
 
 			unset( $key, $hook );
 
-            return $string;
+			return $string;
 		}
-	
+
 
 
 /*
-        [mtli_classnames (string)] => Array:
-        (
-                [file (string)] => string[25] : �mime_type_link_images.php�
-                [line (string)] => int : 1168
-                [type (string)] => string[6] : �filter�
-                [called_by (string)] => string[13] : �apply_filters�
-                [signature (string)] => string[51] : �apply_filters( 'mtli_classnames', $new_classnames )�
-                [params (string)] => Array:
-                (
-                        [0 (int)] => string[17] : � $new_classnames �
-                )
-                [comment (string)] => string[199] : �/* Add filter hook for classnames   @api string $new_classnames Allows a developer to filter the class names string   before it is returned to the class attribute of the link tag * /�
-                [parsed_comment (string)] => Array:
-                (
-                        [description (string)] => Array:
-                        (
-                                [0 (int)] => string[30] : �Add filter hook for classnames�
-                        )
-                        [api (string)] => Array:
-                        (
-                                [0 (int)] => Array:
-                                (
-                                        [type (string)] => string[6] : �string�
-                                        [var_name (string)] => string[15] : �$new_classnames�
-                                        [comment (string)] => string[115] : � Allows a developer to filter the class names string before it is returned to the class attribute of the link tag�
-                                )
-                        )
-                )
-        )
+		[mtli_classnames (string)] => Array:
+		(
+				[file (string)] => string[25] : �mime_type_link_images.php�
+				[line (string)] => int : 1168
+				[type (string)] => string[6] : �filter�
+				[called_by (string)] => string[13] : �apply_filters�
+				[signature (string)] => string[51] : �apply_filters( 'mtli_classnames', $new_classnames )�
+				[params (string)] => Array:
+				(
+						[0 (int)] => string[17] : � $new_classnames �
+				)
+				[comment (string)] => string[199] : �/* Add filter hook for classnames   @api string $new_classnames Allows a developer to filter the class names string   before it is returned to the class attribute of the link tag * /�
+				[parsed_comment (string)] => Array:
+				(
+						[description (string)] => Array:
+						(
+								[0 (int)] => string[30] : �Add filter hook for classnames�
+						)
+						[api (string)] => Array:
+						(
+								[0 (int)] => Array:
+								(
+										[type (string)] => string[6] : �string�
+										[var_name (string)] => string[15] : �$new_classnames�
+										[comment (string)] => string[115] : � Allows a developer to filter the class names string before it is returned to the class attribute of the link tag�
+								)
+						)
+				)
+		)
 */
 
 		/**
-		 *
+		 * Generate the output as xml
 		 *
 		 * Want different xml output ? Just override this method in your own extended class.
 		 *
-		 * @since 0.1
-		 * @author Juliette Reinders Folmer
-		 *
-		 * @return object
+		 * @return	object	SimpleXML object
 		 */
 		function generate_xml_output() {
 
@@ -687,7 +705,7 @@ pr_var( $this->hooks, 'The hooks with gathered info', true );
 				$node->addAttribute( 'line_number', $hook['line'] );
 				$node->addAttribute( 'called_by', $hook['called_by'] );
 				$node->addChild( 'signature', $hook['signature'] );
-				
+
 				if( is_array( $hook['params'] ) && count( $hook['params'] ) > 0 ) {
 					$param_node = $node->addChild( 'parameters' );
 					foreach( $hook['params'] as $param ) {
@@ -724,33 +742,36 @@ pr_var( $this->hooks, 'The hooks with gathered info', true );
 				}
 			}
 			unset( $hooks_node, $key, $hook, $node );
-            return $xml;
+			return $xml;
 		}
 
-		
 
 
-		
+
+
 		/**
-		 *
+		 * Generate the output as php code
 		 *
 		 * Want different php output ? Just override this method in your own extended class.
 		 *
-		 * @since 0.2
-		 * @author Juliette Reinders Folmer
-		 *
-		 * @return array
+		 * @return	array
 		 */
 		function generate_php_output() {
 			$output = array( $this->plugin_name => $this->hooks );
-            return $output;
+			return $output;
 		}
-		
-	
-		/**
-		 *
-		 */
-		function format_output( $output ) {
+
+
+		/* *** METHODS TO FORMAT A VARIETY OF OUTPUT *** */
+
+
+        /**
+         * Format the output to be presented
+         *
+         * @param	mixed	$output
+         * @return	string|void
+         */
+        function format_output( $output ) {
 
 			switch( $this->format ) {
 				case 'textarea':
@@ -763,62 +784,82 @@ pr_var( $this->hooks, 'The hooks with gathered info', true );
 					$output = $this->format_file_output( $output );
 					break;
 			}
-			
+
 			// in the case of 'return', just return the output unchanged
 			return $output;
 		}
 
 
-
-		function format_textarea_output( $output ) {
-			$string = '<form id="wpphd-output"><textarea>';
+        /**
+         * Format the output to be presented in a textarea
+         *
+         * @param	mixed	$output
+         * @return	string
+         */
+        function format_textarea_output( $output ) {
+			$string = '<form id="wpd-output"><textarea>';
 
 			switch( $this->style ) {
 				case 'html':
 					$string .= htmlspecialchars ( $output, ENT_QUOTES, 'UTF-8', true );
 					break;
-	
+
 				case 'xml':
-				
+
 					$string .= htmlspecialchars ( $this->get_pretty_xml( $output->asXML() ), ENT_QUOTES, 'UTF-8', true );
 					break;
-	
+
 				case 'text':
 					$string .= htmlspecialchars ( $output, ENT_QUOTES, 'UTF-8', true );
 					break;
-					
+
 				case 'php':
-					$output = '<?php' . "\n\r\n\r" . print_r( $output, true ) . "\n\r\n\r" . '?>';
+					$output = '<?php' . "\n\r\n\r" . var_export( $output, true ) . ";\n\r\n\r" . '?>';
 					$string .= htmlspecialchars ( $output, ENT_QUOTES, 'UTF-8', true );
 					break;
 			}
 			$string .= '</textarea></form>';
 			return $string;
 		}
-		
-		function get_pretty_xml( $output ) {
+
+        /**
+         * Prettify xml output
+         *
+         * @param	string	$output
+         * @return	string
+         */
+        function get_pretty_xml( $output ) {
 			$dom = new DOMDocument();
 			$dom->loadXML( $output );
 			$dom->formatOutput = true;
 			return $dom->saveXML();
 		}
 
-		function format_view_output( $output ) {
-			
+        /**
+         * Format the output to be viewed
+         *
+         * @param	mixed	$output
+         */
+        function format_view_output( $output ) {
+
 			// xml - header('Content-type: text/xml');
 		}
-		
 
-		function format_file_output( $output ) {
+
+        /**
+         * Format the output to be presented as a file
+         *
+         * @param	mixed	$output
+         */
+        function format_file_output( $output ) {
 			//send file header
-			
+
 			// xml $output->asXML( 'filename' )
 		}
 
 	} /* End of class */
-	
+
 
 } /* End of class-exists wrapper */
-
 
 ?>

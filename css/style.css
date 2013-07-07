@@ -1,35 +1,35 @@
-#wpphd {
+#wpd {
 	font-family: helvetica, verdana, sans-serif;
 	font-size: 14px;
 }
-form#wpphd-form {
+form#wpd-form {
 }
 
-form#wpphd-form input[type="text"] {
+form#wpd-form input[type="text"] {
 	width: 500px;
 }
 
-form#wpphd-form div {
+form#wpd-form div {
 	clear: both;
 }
 
-form#wpphd-form .wpphd-column {
+form#wpd-form .wpd-column {
 	width: 30%;
 	padding: 5px 10px 10px 10px;
 	float: left;
 	clear: none;
 }
 
-form#wpphd-form .wpphd-column p {
+form#wpd-form .wpd-column p {
 	height: 2.3em;
 }
 
 
 
-form#wpphd-output {
+form#wpd-output {
 }
 
-form#wpphd-output textarea {
+form#wpd-output textarea {
 	width: 900px;
 	height: 600px;
 	min-height: 600px;
