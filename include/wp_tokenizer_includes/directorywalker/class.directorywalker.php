@@ -1,6 +1,8 @@
 <?php
 /**
  * File: class.directorywalker.php
+ * @package wp-documentor
+ *
  *
  * Simple Directory Walker
  *
