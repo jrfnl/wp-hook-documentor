@@ -142,6 +142,8 @@ if ( !class_exists( 'wp_hook_documentor_testcase' ) ) {
 		 */
 		function test_inline( $param ) {
 
+			$param = apply_filters( 'no_comment', $param );
+
 			// This is an inline comment
 			$param = apply_filters( 'inline_slash', $param );
 
@@ -284,7 +286,7 @@ if ( !class_exists( 'wp_hook_documentor_testcase' ) ) {
 		 */
 		function test_comments_with_whitespace( $param ) {
 
-			// This is an internal comment - docblock should be used
+			// This is an normal comment
 
 			$param = apply_filters( 'filter-comment-extra-whitespace', $param );
 
@@ -299,6 +301,37 @@ if ( !class_exists( 'wp_hook_documentor_testcase' ) ) {
 		}
 
 
+
+		function test_multiline_not_docblock( $param ) {
+
+			// This line 1 of a slashed multiline comment
+			// This line 2 of a slashed multiline comment
+			$param = apply_filters( 'filter_multiline_slash', $param );
+
+			# This line 1 of a hashed multiline comment
+			# This line 2 of a hashed multiline comment
+			$param = apply_filters( 'filter_multiline_hash', $param );
+
+			/* This line 1 of a star-non DocBlock multiline comment */
+			/* This line 2 of a star-non DocBlock comment */
+			$param = apply_filters( 'filter_multiline_star', $param );
+
+			// This line 1 of a slashed multiline comment
+			# This line 2 of a hashed multiline comment
+			/* This line 3 of a star-non DocBlock comment */
+			$param = apply_filters( 'filter_multiline_mixed', $param );
+
+			return $param;
+		}
+
+
+		function test_comment_not_alone_on_line( $param ) {
+
+			$a = 1 + 2 + 3; // This comment belongs to this line, not to the line below
+			$param = apply_filters( 'filter_comment_not_alone_on_line', $param );
+
+			return $param;
+		}
 
 
 
