@@ -281,6 +281,7 @@ if ( !class_exists( 'wp_hook_documentor' ) ) {
 					// @todo check for @ignore and @internal comment properties and ignore those & try to retrieve another comment higher up
 
 					$hooks[$parsed_signature['hook_name']] = array(
+						'token_position'	=>	$k,
 						'file'				=>	$file_name,
 						'line'				=>	$token->getLine(),
 						'type'				=>	$this->hook_names[$token->__toString()],
@@ -483,7 +484,7 @@ if ( !class_exists( 'wp_hook_documentor' ) ) {
 					'Hook Type: ' . "\t\t\t" . $hook['type'] . "\n\r" .
 					'Called by: ' . "\t\t\t" . $hook['called_by'] . "\n\r" .
 					'Signature: ' . "\t\t\t" . $hook['signature'] . "\n\r" .
-					str_pad ( 'Parameters:', 80, "-", STR_PAD_RIGHT ) . "\n\r";
+					str_pad ( 'Parameters: ', 80, "-", STR_PAD_RIGHT ) . "\n\r";
 
 				if( is_array( $hook['params'] ) && count( $hook['params'] ) > 0 ) {
 					foreach( $hook['params'] as $param ) {
@@ -495,7 +496,7 @@ if ( !class_exists( 'wp_hook_documentor' ) ) {
 					$string .= 'None' . "\n\r";
 				}
 
-				$string .= str_pad ( 'Available documentation:', 80, "-", STR_PAD_RIGHT ) . "\n\r";
+				$string .= str_pad ( 'Available documentation: ', 80, "-", STR_PAD_RIGHT ) . "\n\r";
 				if( is_array( $hook['parsed_comment'] ) && count( $hook['parsed_comment'] )> 0 ) {
 					foreach( $hook['parsed_comment'] as $tag => $comments_array ) {
 
@@ -532,9 +533,8 @@ if ( !class_exists( 'wp_hook_documentor' ) ) {
 				else {
 					$string .= 'None available' . "\n\r";
 				}
-				$string .= str_repeat( '*', 80 ) . "\r\n\r\n";
+				$string .= str_repeat( '*', 80 ) . "\n\r\n\r";
 			}
-			$string .= "\n\r\n\r";
 
 			unset( $key, $hook );
 
@@ -814,7 +814,7 @@ if ( !class_exists( 'wp_hook_documentor' ) ) {
 					break;
 
 				case 'php':
-					$output = '<?php' . "\n\r\n\r" . var_export( $output, true ) . ";\n\r\n\r" . '?>';
+					$output = '<?php' . "\n\r\n\r" . '$hooks = ' . var_export( $output, true ) . ";\n\r\n\r" . '?>';
 					$string .= htmlspecialchars ( $output, ENT_QUOTES, 'UTF-8', true );
 					break;
 			}
