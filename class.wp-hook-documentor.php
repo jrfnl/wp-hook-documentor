@@ -315,7 +315,9 @@ if ( !class_exists( 'wp_hook_documentor' ) ) {
 					'hook_name'	=> 	$matches[2],
 					'params'	=>	( ( isset( $matches[3] ) ? explode( ',', $matches[3] ) : null ),
 				);
-				$sig['params'] = array_map( 'trim', $sig['params'] );
+				if( isset( $sig['params'] ) ) {
+					$sig['params'] = array_map( 'trim', $sig['params'] );
+				}
 			}
 			return $sig;
 		}
