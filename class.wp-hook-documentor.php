@@ -309,11 +309,11 @@ if ( !class_exists( 'wp_hook_documentor' ) ) {
          */
         function parse_hook_signature( $sig ) {
 			$hook_names = implode( '|', array_keys( $this->hook_names ) );
-			$found = preg_match( '`^(?:' . $hook_names . ')\s*\(\s*([\'"])([\w-]+)\1\s*,(.+)\)$`', $sig, $matches );
+			$found = preg_match( '`^(?:' . $hook_names . ')\s*\(\s*([\'"])([\w-]+)\1\s*(?:,(.+))?\)$`', $sig, $matches );
 			if( $found > 0 ) {
 				$sig = array(
 					'hook_name'	=> 	$matches[2],
-					'params'	=>	explode( ',', $matches[3] ),
+					'params'	=>	( ( isset( $matches[3] ) ? explode( ',', $matches[3] ) : null ),
 				);
 				$sig['params'] = array_map( 'trim', $sig['params'] );
 			}
