@@ -312,7 +312,7 @@ if ( !class_exists( 'wp_hook_documentor' ) ) {
 			$found = preg_match( '`^(?:' . $hook_names . ')\s*\(\s*(([\'"])[\w-]+\2(?:\s*\.\s*\$\w+(?:\s*\.\s*\2[\w-]\2)?)?)\s*(?:,(.+))?\)$`', $sig, $matches );
 			if( $found > 0 ) {
 				$sig = array(
-					'hook_name'	=> 	$matches[2],
+					'hook_name'	=> 	$matches[1],
 					'params'	=>	( isset( $matches[3] ) ? explode( ',', $matches[3] ) : null ),
 				);
 				if( isset( $sig['params'] ) ) {
