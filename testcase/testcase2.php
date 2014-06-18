@@ -93,6 +93,21 @@ if ( !class_exists( 'wp_hook_documentor_another_testcase' ) ) {
 
 			return $param;
 		}
+		
+		
+		function test_variable_hook_names( $param ) {
+
+			$param = apply_filters( 'filter_' . $variable, $param );
+
+			$param = apply_filters( $variable . 'filter', $param );
+
+			$param = apply_filters( 'filter_' . $variable . '_filter', $param );
+
+			$param = apply_filters( 'filter_' . $variable . "_filter", $param );
+
+			return $param;
+		}
+
 
 
 	} /* End of class */

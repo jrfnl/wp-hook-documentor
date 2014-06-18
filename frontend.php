@@ -37,6 +37,7 @@ if ( !class_exists( 'wp_hook_documentor_frontend' ) ) {
 		// Current default is just for testing purposes
 //		public $default_source = 'I:\000_GitHub\debug-bar-constants\debug-bar-constants';
 //		public $default_source = 'I:\000_GitHub\WP Plugin Hook documentor\wp-hook-documentor\testcase';
+//		public $default_source = 'I:\000_GitHub\WordPress_SEO_by_Yoast\wordpress-seo';
 		public $default_source = 'testcase/';
 
 

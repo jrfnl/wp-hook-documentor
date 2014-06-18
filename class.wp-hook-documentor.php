@@ -273,6 +273,19 @@ if ( !class_exists( 'wp_hook_documentor' ) ) {
 					$signature = $tokenizer->get_signature( $tokens, $token, $k );
 					$parsed_signature = $this->parse_hook_signature( $signature );
 
+if( ! is_array( $parsed_signature ) && self::DEV ) {
+	pr_var(
+		array(
+			'signature' => $signature,
+			'parsed_sig' => $parsed_signature,
+			'file' => $file_name,
+			'line' => $token->getLine(),
+		),
+		'Problem signature',
+		true
+	);
+}
+
 //					$parsed_comment = $tokenizer->parse_nearest_comment( /*$token,*/ $k );
 /*		public function parse_nearest_comment( $tokens, $key, $tags = null ) {
 			return $this->parse_comment( $this->get_nearest_comment( $tokens, $key, $tags ), $tags );
@@ -309,7 +322,8 @@ if ( !class_exists( 'wp_hook_documentor' ) ) {
          */
         function parse_hook_signature( $sig ) {
 			$hook_names = implode( '|', array_keys( $this->hook_names ) );
-			$found = preg_match( '`^(?:' . $hook_names . ')\s*\(\s*(([\'"])[\w\$\{\}-]+\2(?:\s*\.\s*\$\w+(?:\s*\.\s*\2[\w\$\{\}-]\2)?)?)\s*(?:,(.+))?\)$`', $sig, $matches );
+			$found = preg_match( '`^(?:' . $hook_names . ')\s*\(\s*(([\'"])[\w\$\{\}-]+\2(?:\s*\.\s*\$\w+(?:\s*\.\s*([\'"])[\w\$\{\}-]+\3)?)?)\s*(?:,(.+))?\)$`', $sig, $matches );
+//pr_var( $matches, 'Found : ' . $found, true );
 			if( $found > 0 ) {
 				$sig = array(
 					'hook_name'	=> 	$matches[1],
@@ -499,7 +513,7 @@ if ( !class_exists( 'wp_hook_documentor' ) ) {
 				}
 
 				$string .= str_pad ( 'Available documentation: ', 80, "-", STR_PAD_RIGHT ) . "\n\r";
-				if( is_array( $hook['parsed_comment'] ) && count( $hook['parsed_comment'] )> 0 ) {
+				if( is_array( $hook['parsed_comment'] ) && count( $hook['parsed_comment'] ) > 0 ) {
 					foreach( $hook['parsed_comment'] as $tag => $comments_array ) {
 
 						foreach( $comments_array as $key => $item ) {
@@ -584,55 +598,85 @@ if ( !class_exists( 'wp_hook_documentor' ) ) {
 		 * @return	string
 		 */
 		function generate_html_output() {
-			$string = 'Actions and Filters for Plugin: ' . $this->plugin_name . "\r\n" . str_repeat( '=', 80 ) . "\r\n\r\n";
+			$string = '
+<h2 class="wphd">Actions and Filters for Plugin: ' . $this->plugin_name . '<h2>
+
+<div class="wphd-output">';
 
 			foreach( $this->hooks as $key => $hook ) {
-				$string .= 'Hook: ' . "\t\t\t\t" . $key . "\n\r" .
-					'File Name: ' . "\t\t\t" . $hook['file'] . "\n\r" .
-					'Line Number: ' . "\t\t\t" . $hook['line'] . "\n\r" .
-					'Hook Type: ' . "\t\t\t" . $hook['type'] . "\n\r" .
-					'Called by: ' . "\t\t\t" . $hook['called_by'] . "\n\r" .
-					'Signature: ' . "\t\t\t" . $hook['signature'] . "\n\r" .
-					str_pad ( 'Parameters:', 80, "-", STR_PAD_RIGHT ) . "\n\r";
-
+				$string .= '
+	<table class="wphd-hook">
+		<tr>
+			<th>Hook:</th>
+			<td colspan="2"><span class="wphd-hookname">' . $key . '</span></td>
+		</tr>
+		<tr>
+			<th>Type:</th>
+			<td colspan="2"><span class="wphd-hooktype">' . $hook['type'] . '</span></td>
+		</tr>
+		<tr>
+			<th>Signature:</th>
+			<td colspan="2"><span class="wphd-hooksig">' . $hook['signature'] . '</span></td>
+		</tr>
+		<tr>
+			<th>Located in:</th>
+			<td colspan="2"><span class="wphd-hooklocation"><span class="wphd-hookfile">' . $hook['file'] . '</span> on line <span class="wphd-hooklinenr">' . $hook['line'] . '</span></span></td>
+		</tr>';
+	
 				if( is_array( $hook['params'] ) && count( $hook['params'] ) > 0 ) {
-					foreach( $hook['params'] as $param ) {
-						$string .= $param . "\n\r";
-					}
-					unset( $param );
-				}
-				else {
-					$string .= 'None' . "\n\r";
+					$string .= '
+		<tr>
+			<th>Parameters:</th>
+			<td colspan="2"><span class="wphd-hookparams">' . implode( ', ', $hook['params'] ) . '</span></td>
+		</tr>';
 				}
 
-				$string .= str_pad ( 'Available documentation:', 80, "-", STR_PAD_RIGHT ) . "\n\r";
-				if( is_array( $hook['parsed_comment'] ) && count( $hook['parsed_comment'] )> 0 ) {
+
+				if( is_array( $hook['parsed_comment'] ) && count( $hook['parsed_comment'] ) > 0 ) {
+					$string .= '
+		<tr>
+			<th colspan="3">Available documentation:</th>
+		</tr>';
+
 					foreach( $hook['parsed_comment'] as $tag => $comments_array ) {
 
 						foreach( $comments_array as $key => $item ) {
-							// Set the tag column
-							if( $key === 0 ) {
-//								$string .= str_pad( $tag . ' :', 20 );
-								$col1 = str_pad( $tag . ' :', 18 );
-							}
-							else {
-//								$string .= $prefix = str_repeat( ' ', 20 );
-								$col1 = str_repeat( ' ', 18 );
-							}
-
-							// Set the content column
 							if( is_string( $item ) ) {
-								$string .= $col1 . str_repeat( ' ', 14 ) . $item . "\n\r";
+								$string .= '
+		<tr>
+			<th><span class="wphd-hookdoc-tag">' . $tag . '</span></th>
+			<td colspan="2"><span class="wphd-hookdoc-text">' . $item . '</span></td>
+		</tr>';
 							}
 							else if( is_array( $item ) && count( $item ) > 0 ) {
-								// @todo -> add the repeated string for the array items after 1
+								$first = true;
+
 								foreach( $item as $k => $v ) {
-									$string .= $col1 . str_pad( $k . ':', 14 ) . $v . "\n\r";
+									if( $first ) {
+										$col1 = '
+			<th rowspan="' . count( $item ) . '"><span class="wphd-hookdoc-tag">' . $tag . '</span></th>';
+
+										$first = false;
+									}
+									else {
+										$col1 = '';
+									}
+
+									$string .= '
+		<tr>' . $col1 . '
+			<td><span class="wphd-hookdoc-key">' . $k . '</span></td>
+			<td><span class="wphd-hookdoc-text">' . $v . '</span></td>
+		</tr>';
 								}
-								unset( $k, $v );
+								unset( $k, $v, $first );
 							}
 							else {
-								$string .= '---' . "\n\r";
+								$string .= '
+		<tr>
+			<th><span class="wphd-hookdoc-tag">' . $tag . '</span></th>
+			<td colspan="2"><span class="wphd-hookdoc-notext">---</span></td>
+		</tr>';
+
 							}
 						}
 						unset( $key, $item );
@@ -640,13 +684,25 @@ if ( !class_exists( 'wp_hook_documentor' ) ) {
 					unset( $tag, $comments_array );
 				}
 				else {
-					$string .= 'None available' . "\n\r";
+					$string .= '
+		<tr>
+			<th colspan="3"><span class="wphd-hookdoc-none">No hook documentation available.</span></th>
+		</tr>';
 				}
-				$string .= str_repeat( '*', 80 ) . "\r\n\r\n";
+
+/*				$string .= '
+	</table>' . "\n\n";
+*/
+
+				$string .= '
+	</table><hr/>' . "\n\n";
+
 			}
-			$string .= "\n\r\n\r";
 
 			unset( $key, $hook );
+
+			$string .= '
+</div>';
 
 			return $string;
 		}
@@ -716,7 +772,7 @@ if ( !class_exists( 'wp_hook_documentor' ) ) {
 					unset( $param, $param_node );
 				}
 
-				if( is_array( $hook['parsed_comment'] ) && count( $hook['parsed_comment'] )> 0 ) {
+				if( is_array( $hook['parsed_comment'] ) && count( $hook['parsed_comment'] ) > 0 ) {
 
 					$doc_node = $node->addChild( 'documentation' );
 					$tags_node = $doc_node->addChild( 'tags' );
@@ -864,4 +920,3 @@ if ( !class_exists( 'wp_hook_documentor' ) ) {
 
 } /* End of class-exists wrapper */
 
-?>

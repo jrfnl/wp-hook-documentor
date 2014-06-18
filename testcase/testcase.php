@@ -334,7 +334,6 @@ if ( !class_exists( 'wp_hook_documentor_testcase' ) ) {
 		}
 
 
-
 	} /* End of class */
 
 
